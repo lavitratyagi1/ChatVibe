@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "488993058519",
+    "project_id": "messaging-app-d5e25",
+    "storage_bucket": "messaging-app-d5e25.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:488993058519:android:08a7bf2bb7a4f2c5a9ca92",
+        "android_client_info": {
+          "package_name": "com.example.chatvibe"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "488993058519-7gmnklmvp4dns4t4rn9442vpb3lfens0.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDtmeRalNVGLccnTnOpS_LqVYb-n-jw6oQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "488993058519-7gmnklmvp4dns4t4rn9442vpb3lfens0.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "488993058519-6b76f9sdk1q0nesofbc2tsqh9gl23ftf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.messagingApp.RunnerTests"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

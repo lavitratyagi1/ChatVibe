@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>488993058519-vnngqu3uorkggsrt9h0on9fbsm192l7d.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.488993058519-vnngqu3uorkggsrt9h0on9fbsm192l7d</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>488993058519-t6bcr1im1s6bh45qf5vniutrtvjlgjgo.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCvejE6Sh2XJiv83Lj__Tb5N2-nw2SVXfQ</string>
+	<key>GCM_SENDER_ID</key>
+	<string>488993058519</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.example.chatvibe</string>
+	<key>PROJECT_ID</key>
+	<string>messaging-app-d5e25</string>
+	<key>STORAGE_BUCKET</key>
+	<string>messaging-app-d5e25.appspot.com</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:488993058519:ios:e3692ea2e4a558a4a9ca92</string>
+</dict>
+</plist>
