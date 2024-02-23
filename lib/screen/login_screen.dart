@@ -27,8 +27,8 @@ class LoginScreen extends StatelessWidget {
                 ),
                 label: Text('Sign in with Google'),
                 style: ElevatedButton.styleFrom(
-                  primary: Colors.white, // Google sign-in button color
-                  onPrimary: Colors.black, // Text color
+                  foregroundColor: Colors.black, 
+                  backgroundColor: Colors.white,
                 ),
               ),
               SizedBox(height: 20),
