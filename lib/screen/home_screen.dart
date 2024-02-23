@@ -7,7 +7,6 @@ import 'package:chatvibe/screen/chat_page.dart';
 import 'package:chatvibe/screen/login_screen.dart';
 import 'package:chatvibe/screen/user_search.dart';
 import 'package:connectivity/connectivity.dart';
-import 'package:hive/hive.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -110,17 +109,10 @@ class _HomeScreenState extends State<HomeScreen> {
           }
         });
 
-        var box = await Hive.openBox('usernames');
-        _usernames.forEach((userId, username) {
-          box.put(userId, username);
-        });
       } catch (e) {
         // Handle errors
         print('Error loading data: $e');
       }
-    } else {
-      var box = await Hive.openBox('usernames');
-      _usernames = box.toMap().cast<String, String>();
     }
     setState(() {
       _dataLoaded = true;
@@ -177,6 +169,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     return ListTile(
                       leading: CircleAvatar(
                         backgroundImage:
+                            // ignore: unnecessary_null_comparison
                             photoURL != null ? NetworkImage(photoURL) : null,
                       ),
                       title: Text(username),

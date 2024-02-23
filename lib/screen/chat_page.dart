@@ -1,7 +1,11 @@
+import 'dart:async';
+
+import 'package:chatvibe/screen/notification_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
-import 'package:hive/hive.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class ChatPage extends StatefulWidget {
   final String userId;
@@ -21,17 +25,36 @@ class ChatPage extends StatefulWidget {
 class _ChatPageState extends State<ChatPage> {
   late CollectionReference _messagesCollection;
   final TextEditingController _messageController = TextEditingController();
+
   String _recipientName = '';
+  String _senderName = '';
+  String _userImage = '';
+
   List<Map<String, dynamic>> _messages = [];
+  late StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
+      _messageStreamSubscription; // Corrected type
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
 
   @override
   void initState() {
     super.initState();
     _messagesCollection = FirebaseFirestore.instance.collection('Messages');
     _loadRecipientName();
+    _loadSenderName();
     if (widget.chatDocumentId != null) {
       _loadPreviousMessages();
     }
+
+    // Subscribe to messages received while app is in foreground
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      print("Foreground message received: ${message.notification?.title}");
+      _displayNotification(
+          message.notification?.title, message.notification?.body, _userImage);
+    });
+
+    // Initialize local notifications
+    _initializeLocalNotifications();
   }
 
   Future<void> _loadRecipientName() async {
@@ -44,15 +67,27 @@ class _ChatPageState extends State<ChatPage> {
     });
   }
 
+  Future<void> _loadSenderName() async {
+    DocumentSnapshot senderDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.userId)
+        .get();
+
+    _senderName = senderDoc['displayName'] ?? '';
+    _userImage = senderDoc['photoURL'] ?? '';
+  }
+
   Future<void> _loadPreviousMessages() async {
-    var messagesCollection =
-        _messagesCollection.doc(widget.chatDocumentId).collection('messages');
+    final messagesCollection = FirebaseFirestore.instance
+        .collection('Messages')
+        .doc(widget.chatDocumentId)
+        .collection('messages');
 
     // Listen for updates to the messages collection in real-time
-    messagesCollection
+    final subscription = messagesCollection
         .orderBy('timestamp', descending: true)
         .snapshots()
-        .listen((snapshot) {
+        .listen((QuerySnapshot<Map<String, dynamic>> snapshot) {
       setState(() {
         _messages = snapshot.docs
             .map((doc) => doc.data() as Map<String, dynamic>)
@@ -61,6 +96,10 @@ class _ChatPageState extends State<ChatPage> {
             .compareTo(a['timestamp'])); // Sort messages by timestamp
       });
     });
+
+    // Cancel the subscription when the widget is disposed
+    // to prevent memory leaks
+    _messageStreamSubscription = subscription;
   }
 
   Future<void> _sendMessage() async {
@@ -69,8 +108,7 @@ class _ChatPageState extends State<ChatPage> {
       // Check for internet connectivity
       var connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
-        // Device is offline, store message locally
-        await _storeMessageLocally(messageContent);
+        // Device is offline, handle accordingly
         return;
       }
 
@@ -96,19 +134,15 @@ class _ChatPageState extends State<ChatPage> {
           },
         );
       });
+      String recipientPushToken = await _getRecipientPushToken();
+      if (recipientPushToken.isNotEmpty) {
+        String message = messageContent; // Customize the message as needed
+        await NotificationManager.sendPushNotification(
+            _senderName, recipientPushToken, message, _userImage);
+      }
 
       _messageController.clear();
     }
-  }
-
-  Future<void> _storeMessageLocally(String messageContent) async {
-    var messageTimestamp = DateTime.now();
-    var messageBox = await Hive.openBox('offline_messages');
-    await messageBox.add({
-      'senderId': widget.userId,
-      'messageContent': messageContent,
-      'timestamp': messageTimestamp,
-    });
   }
 
   @override
@@ -131,8 +165,8 @@ class _ChatPageState extends State<ChatPage> {
                       : Alignment.centerLeft,
                   child: Padding(
                     padding: EdgeInsets.only(
-                      left: message['senderId'] == widget.userId ? 64.0 : 8.0,
-                      right: message['senderId'] == widget.userId ? 8.0 : 64.0,
+                      left: message['senderId'] == widget.userId ? 64.0 : 16.0,
+                      right: message['senderId'] == widget.userId ? 16.0 : 64.0,
                       top: 4.0,
                       bottom: 4.0,
                     ),
@@ -193,6 +227,7 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
+    _messageStreamSubscription.cancel(); // Cancel subscription
     _messageController.dispose();
     super.dispose();
   }
@@ -207,6 +242,50 @@ class _ChatPageState extends State<ChatPage> {
       // If it's already a DateTime, format it directly
       return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
     } else {
+      return '';
+    }
+  }
+
+  void _initializeLocalNotifications() {
+    var initializationSettingsAndroid =
+        AndroidInitializationSettings('app_icon');
+    var initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+    );
+    _flutterLocalNotificationsPlugin.initialize(
+      initializationSettings,
+    );
+  }
+
+  Future<void> _displayNotification(String? title, String? body, String? imageUrl) async {
+    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'chat_notification',
+      'Chat Notification',
+      importance: Importance.max,
+      priority: Priority.high,
+      largeIcon: imageUrl != null ? DrawableResourceAndroidBitmap(imageUrl) : null,
+    );
+    var platformChannelSpecifics = NotificationDetails(
+      android: androidPlatformChannelSpecifics,
+    );
+    await _flutterLocalNotificationsPlugin.show(
+      0,
+      title,
+      body,
+      platformChannelSpecifics,
+      payload: 'chat_payload',
+    );
+  }
+
+  Future<String> _getRecipientPushToken() async {
+    try {
+      var recipientDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(widget.recipientId)
+          .get();
+      return recipientDoc['pushToken'] ?? '';
+    } catch (e) {
+      print('Error fetching recipient push token: $e');
       return '';
     }
   }

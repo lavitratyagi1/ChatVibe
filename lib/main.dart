@@ -1,8 +1,8 @@
+import 'package:chatvibe/screen/notification_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:hive/hive.dart';
-import 'package:path_provider/path_provider.dart' as path_provider;
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'package:chatvibe/firebase_options.dart';
 import 'package:chatvibe/screen/login_screen.dart';
@@ -13,11 +13,21 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  // Initialize Hive and open the box
-  final appDocumentDirectory = await path_provider.getApplicationDocumentsDirectory();
-  Hive.init(appDocumentDirectory.path);
-  await Hive.openBox('messages'); // Open a Hive box with the name 'messages'
+  FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
   runApp(MyApp());
+
+  // Get the Firebase messaging token
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  _auth.authStateChanges().listen((User? user) {
+    if (user != null) {
+      NotificationManager.getFirebaseMessagingToken(user.email!);
+    }
+  });
+}
+
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  // Handle notifications received when the app is in the background or terminated
+  print('Handling background message: ${message.notification?.title}');
 }
 
 class MyApp extends StatelessWidget {
