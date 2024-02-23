@@ -93,7 +93,7 @@ class _ChatPageState extends State<ChatPage> {
             .map((doc) => doc.data() as Map<String, dynamic>)
             .toList();
         _messages.sort((a, b) => b['timestamp']
-            .compareTo(a['timestamp'])); // Sort messages by timestamp
+            .compareTo(a['timestamp'])); 
       });
     });
 
