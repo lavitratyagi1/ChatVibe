@@ -138,7 +138,7 @@ class _ChatPageState extends State<ChatPage> {
       if (recipientPushToken.isNotEmpty) {
         String message = messageContent; // Customize the message as needed
         await NotificationManager.sendPushNotification(
-            _senderName, recipientPushToken, message, _userImage);
+            _senderName, recipientPushToken, message);
       }
 
       _messageController.clear();

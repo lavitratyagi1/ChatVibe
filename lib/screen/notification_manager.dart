@@ -43,7 +43,7 @@ class NotificationManager {
   }
 
   static Future<void> sendPushNotification(
-      String recipient, String pushToken, String msg, String imageUrl) async {
+      String recipient, String pushToken, String msg) async {
     try {
       final body = {
         "to": pushToken,
@@ -51,7 +51,6 @@ class NotificationManager {
           "title": recipient, // Change to your app's name
           "body": msg,
           "android_channel_id": "chats",
-          "image": imageUrl,
         },
       };
 
