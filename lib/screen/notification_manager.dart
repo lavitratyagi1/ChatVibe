@@ -51,6 +51,7 @@ class NotificationManager {
           "title": recipient, // Change to your app's name
           "body": msg,
           "android_channel_id": "chats",
+          "sound": "default"
         },
       };
 
