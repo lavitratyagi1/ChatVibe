@@ -7,8 +7,11 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:chatvibe/firebase_options.dart';
 import 'package:chatvibe/screen/login_screen.dart';
 import 'package:chatvibe/screen/home_screen.dart';
+import 'package:flutter_notification_channel/flutter_notification_channel.dart';
+import 'package:flutter_notification_channel/notification_importance.dart';
 
 void main() async {
+  _registerNotificationChannel();
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
@@ -60,4 +63,15 @@ class MyApp extends StatelessWidget {
       ),
     );
   }
+}
+
+_registerNotificationChannel() async {
+  var result = await FlutterNotificationChannel.registerNotificationChannel(
+    description: 'Chat notification',
+    id: 'chats',
+    importance: NotificationImportance.IMPORTANCE_HIGH,
+    name: 'Chats',
+    allowBubbles: true,
+  );
+  print(result);
 }

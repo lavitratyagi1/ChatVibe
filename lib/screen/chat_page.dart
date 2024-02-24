@@ -46,13 +46,6 @@ class _ChatPageState extends State<ChatPage> {
       _loadPreviousMessages();
     }
 
-    // Subscribe to messages received while app is in foreground
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print("Foreground message received: ${message.notification?.title}");
-      _displayNotification(
-          message.notification?.title, message.notification?.body, _userImage);
-    });
-
     // Initialize local notifications
     _initializeLocalNotifications();
   }
@@ -93,7 +86,7 @@ class _ChatPageState extends State<ChatPage> {
             .map((doc) => doc.data() as Map<String, dynamic>)
             .toList();
         _messages.sort((a, b) => b['timestamp']
-            .compareTo(a['timestamp'])); // Sort messages by timestamp
+            .compareTo(a['timestamp'])); 
       });
     });
 
@@ -138,7 +131,7 @@ class _ChatPageState extends State<ChatPage> {
       if (recipientPushToken.isNotEmpty) {
         String message = messageContent; // Customize the message as needed
         await NotificationManager.sendPushNotification(
-            _senderName, recipientPushToken, message, _userImage);
+            _senderName, recipientPushToken, message);
       }
 
       _messageController.clear();
@@ -257,26 +250,7 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  Future<void> _displayNotification(String? title, String? body, String? imageUrl) async {
-    var androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'chat_notification',
-      'Chat Notification',
-      importance: Importance.max,
-      priority: Priority.high,
-      largeIcon: imageUrl != null ? DrawableResourceAndroidBitmap(imageUrl) : null,
-    );
-    var platformChannelSpecifics = NotificationDetails(
-      android: androidPlatformChannelSpecifics,
-    );
-    await _flutterLocalNotificationsPlugin.show(
-      0,
-      title,
-      body,
-      platformChannelSpecifics,
-      payload: 'chat_payload',
-    );
-  }
-
+  
   Future<String> _getRecipientPushToken() async {
     try {
       var recipientDoc = await FirebaseFirestore.instance
