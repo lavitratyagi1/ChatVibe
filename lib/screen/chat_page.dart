@@ -4,7 +4,6 @@ import 'package:chatvibe/screen/notification_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
-import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 class ChatPage extends StatefulWidget {
@@ -86,7 +85,7 @@ class _ChatPageState extends State<ChatPage> {
             .map((doc) => doc.data() as Map<String, dynamic>)
             .toList();
         _messages.sort((a, b) => b['timestamp']
-            .compareTo(a['timestamp'])); 
+            .compareTo(a['timestamp']));
       });
     });
 
@@ -250,7 +249,6 @@ class _ChatPageState extends State<ChatPage> {
     );
   }
 
-  
   Future<String> _getRecipientPushToken() async {
     try {
       var recipientDoc = await FirebaseFirestore.instance
