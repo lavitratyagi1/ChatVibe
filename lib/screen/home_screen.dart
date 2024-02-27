@@ -7,6 +7,7 @@ import 'package:chatvibe/screen/chat_page.dart';
 import 'package:chatvibe/screen/login_screen.dart';
 import 'package:chatvibe/screen/user_search.dart';
 import 'package:connectivity/connectivity.dart';
+import 'package:chatvibe/screen/ProfilePage.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -135,22 +136,18 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text('Chat App'),
         actions: [
           GestureDetector(
-            onTap: _signOut,
-            child: Align(
-              alignment: Alignment.topRight,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: GestureDetector(
-                  onTap: () {
-                    if (_user != null) {
-                      _signOut();
-                    }
-                  },
-                  child: CircleAvatar(
-                    backgroundImage:
-                        _user != null ? NetworkImage(_user!.photoURL!) : null,
-                  ),
-                ),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (context) => ProfilePage(userId: _user!.uid)),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: CircleAvatar(
+                backgroundImage:
+                    _user != null ? NetworkImage(_user!.photoURL!) : null,
               ),
             ),
           ),
