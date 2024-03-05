@@ -153,17 +153,18 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                 SizedBox(height: 20),
-                ListView(
-                  shrinkWrap: true,
-                  children: [
-                    ListTile(
-                      title: Text('Sign Out'),
-                      leading: Icon(Icons.logout),
-                      onTap: _signOut,
-                    ),
-                    // Add more ListTiles here for additional buttons
-                  ],
-                ),
+                if (!_isEditing)
+                  ListView(
+                    shrinkWrap: true,
+                    children: [
+                      ListTile(
+                        title: Text('Sign Out'),
+                        leading: Icon(Icons.logout),
+                        onTap: _signOut,
+                      ),
+                      // Add more ListTiles here for additional buttons
+                    ],
+                  ),
                 if (_isEditing)
                   ElevatedButton(
                     onPressed: _saveChanges,
