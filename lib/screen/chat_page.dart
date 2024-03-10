@@ -30,6 +30,7 @@ class _ChatPageState extends State<ChatPage> {
 
   String _recipientName = '';
   String _senderName = '';
+  // ignore: unused_field
   String _userImage = '';
 
   List<Map<String, dynamic>> _messages = [];
@@ -105,23 +106,16 @@ class _ChatPageState extends State<ChatPage> {
       var messagesCollection =
           _messagesCollection.doc(widget.chatDocumentId).collection('messages');
 
+      _messageController.clear();
+
+      // ignore: unused_local_variable
       DocumentReference messageRef = await messagesCollection.add({
         'senderId': widget.userId,
         'messageContent': messageContent,
         'timestamp': messageTimestamp,
       });
 
-      setState(() {
-        _messages.insert(
-          0,
-          {
-            'messageId': messageRef.id,
-            'senderId': widget.userId,
-            'messageContent': messageContent,
-            'timestamp': messageTimestamp,
-          },
-        );
-      });
+      setState(() {});
 
       String recipientPushToken = await _getRecipientPushToken();
       if (recipientPushToken.isNotEmpty) {
@@ -129,8 +123,6 @@ class _ChatPageState extends State<ChatPage> {
         await NotificationManager.sendPushNotification(
             _senderName, recipientPushToken, message);
       }
-
-      _messageController.clear();
     }
   }
 
@@ -263,9 +255,7 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 IconButton(
-                    onPressed: _pickImageOrVideo, 
-                    icon: Icon(Icons.photo)
-                    ),
+                    onPressed: _pickImageOrVideo, icon: Icon(Icons.photo)),
                 IconButton(
                   icon: Icon(Icons.send),
                   onPressed: _sendMessage,
