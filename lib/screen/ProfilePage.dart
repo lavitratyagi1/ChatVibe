@@ -20,6 +20,7 @@ class _ProfilePageState extends State<ProfilePage> {
   bool _isEditing = false;
   final _userNameController = TextEditingController();
   final _bioController = TextEditingController();
+  final _bioFocusNode = FocusNode();
 
   @override
   void initState() {
@@ -93,6 +94,15 @@ class _ProfilePageState extends State<ProfilePage> {
                 });
               },
             ),
+          if (_isEditing)
+            IconButton(
+              icon: Icon(Icons.clear),
+              onPressed: () {
+                setState(() {
+                  _isEditing = false;
+                });
+              },
+            ),
         ],
       ),
       body: SingleChildScrollView(
@@ -135,16 +145,25 @@ class _ProfilePageState extends State<ProfilePage> {
                         TextFormField(
                           controller: _bioController,
                           decoration: InputDecoration(labelText: 'Bio'),
-                          maxLines: 3,
+                          maxLines: 2,
+                          maxLength: 100,
+                          focusNode: _bioFocusNode,
                         ),
                       ],
                     ),
                   ),
                 SizedBox(height: 20),
                 if (!_isEditing)
-                  ElevatedButton(
-                    onPressed: _signOut,
-                    child: Text('Sign Out'),
+                  ListView(
+                    shrinkWrap: true,
+                    children: [
+                      ListTile(
+                        title: Text('Sign Out'),
+                        leading: Icon(Icons.logout),
+                        onTap: _signOut,
+                      ),
+                      // Add more ListTiles here for additional buttons
+                    ],
                   ),
                 if (_isEditing)
                   ElevatedButton(
@@ -163,6 +182,7 @@ class _ProfilePageState extends State<ProfilePage> {
   void dispose() {
     _userNameController.dispose();
     _bioController.dispose();
+    _bioFocusNode.dispose();
     super.dispose();
   }
 }

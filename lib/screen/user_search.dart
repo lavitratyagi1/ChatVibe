@@ -18,82 +18,93 @@ class _SearchPageState extends State<UserSearchPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Search'),
-        leading: IconButton(
-          icon: Icon(Icons.home),
-          onPressed: () {
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (context) => HomeScreen()),
-            );
-          },
+    return WillPopScope(
+      onWillPop: () async {
+        // Navigate back to the home page when the back button is pressed
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => HomeScreen()),
+        );
+        // Indicate that the back button press event has been handled
+        return true;
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text('Search'),
+          leading: IconButton(
+            icon: Icon(Icons.home),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => HomeScreen()),
+              );
+            },
+          ),
         ),
-      ),
-      body: Column(
-        children: [
-          Padding(
-            padding: EdgeInsets.all(8.0),
-            child: TextField(
-              controller: _searchController,
-              decoration: InputDecoration(
-                hintText: 'Search by displayName',
-                suffixIcon: IconButton(
-                  icon: Icon(Icons.search),
-                  onPressed: _search,
+        body: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.all(8.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search by displayName',
+                  suffixIcon: IconButton(
+                    icon: Icon(Icons.search),
+                    onPressed: _search,
+                  ),
                 ),
               ),
             ),
-          ),
-          Expanded(
-            child: _searchResults.isEmpty
-                ? Center(
-                    child: Text('No results found'),
-                  )
-                : ListView.builder(
-                    itemCount: _searchResults.length,
-                    itemBuilder: (context, index) {
-                      var user = _searchResults[index].data() as Map<String, dynamic>;
-                      var recipientId = _searchResults[index].id; // Assuming this is the recipient's UID
-                      var senderId = widget.userId; // Assuming you have the sender's UID stored in widget.userId
+            Expanded(
+              child: _searchResults.isEmpty
+                  ? Center(
+                      child: Text('No results found'),
+                    )
+                  : ListView.builder(
+                      itemCount: _searchResults.length,
+                      itemBuilder: (context, index) {
+                        var user = _searchResults[index].data() as Map<String, dynamic>;
+                        var recipientId = _searchResults[index].id; // Assuming this is the recipient's UID
+                        var senderId = widget.userId; // Assuming you have the sender's UID stored in widget.userId
 
-                      return GestureDetector(
-                        onTap: () async {
-                          // Check if a chat document exists between sender and recipient
-                          bool chatExists = await _checkExistingChat(recipientId, senderId);
+                        return GestureDetector(
+                          onTap: () async {
+                            // Check if a chat document exists between sender and recipient
+                            bool chatExists = await _checkExistingChat(recipientId, senderId);
 
-                          if (chatExists) {
-                            // If a chat document exists, navigate to the existing chat page
-                            String chatDocumentId = await _getExistingChatDocumentId(recipientId, senderId);
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChatPage(userId: senderId, recipientId: recipientId, chatDocumentId: chatDocumentId),
-                              ),
-                            );
-                          } else {
-                            // If no chat document exists, create a new document
-                            String chatDocumentId = await _createNewMessageDocument(recipientId, senderId);
+                            if (chatExists) {
+                              // If a chat document exists, navigate to the existing chat page
+                              String chatDocumentId = await _getExistingChatDocumentId(recipientId, senderId);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatPage(userId: senderId, recipientId: recipientId, chatDocumentId: chatDocumentId),
+                                ),
+                              );
+                            } else {
+                              // If no chat document exists, create a new document
+                              String chatDocumentId = await _createNewMessageDocument(recipientId, senderId);
 
-                            // Navigate to the chat page
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => ChatPage(userId: senderId, recipientId: recipientId, chatDocumentId: chatDocumentId),
-                              ),
-                            );
-                          }
-                        },
-                        child: ListTile(
-                          title: Text(user['displayName'] ?? 'Unknown User'), // Assuming 'displayName' is the key for the user's name
-                          // Add more UI elements like buttons to add as friend or initiate chat
-                        ),
-                      );
-                    },
-                  ),
-          ),
-        ],
+                              // Navigate to the chat page
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ChatPage(userId: senderId, recipientId: recipientId, chatDocumentId: chatDocumentId),
+                                ),
+                              );
+                            }
+                          },
+                          child: ListTile(
+                            title: Text(user['displayName'] ?? 'Unknown User'), // Assuming 'displayName' is the key for the user's name
+                            // Add more UI elements like buttons to add as friend or initiate chat
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }

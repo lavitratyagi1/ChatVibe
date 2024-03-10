@@ -1,10 +1,13 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:chatvibe/screen/notification_manager.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity/connectivity.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_storage;
 
 class ChatPage extends StatefulWidget {
   final String userId;
@@ -27,11 +30,12 @@ class _ChatPageState extends State<ChatPage> {
 
   String _recipientName = '';
   String _senderName = '';
+  // ignore: unused_field
   String _userImage = '';
 
   List<Map<String, dynamic>> _messages = [];
   late StreamSubscription<QuerySnapshot<Map<String, dynamic>>>
-      _messageStreamSubscription; // Corrected type
+      _messageStreamSubscription;
   final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -75,7 +79,6 @@ class _ChatPageState extends State<ChatPage> {
         .doc(widget.chatDocumentId)
         .collection('messages');
 
-    // Listen for updates to the messages collection in real-time
     final subscription = messagesCollection
         .orderBy('timestamp', descending: true)
         .snapshots()
@@ -84,23 +87,18 @@ class _ChatPageState extends State<ChatPage> {
         _messages = snapshot.docs
             .map((doc) => doc.data() as Map<String, dynamic>)
             .toList();
-        _messages.sort((a, b) => b['timestamp']
-            .compareTo(a['timestamp']));
+        _messages.sort((a, b) => b['timestamp'].compareTo(a['timestamp']));
       });
     });
 
-    // Cancel the subscription when the widget is disposed
-    // to prevent memory leaks
     _messageStreamSubscription = subscription;
   }
 
   Future<void> _sendMessage() async {
     String messageContent = _messageController.text.trim();
     if (messageContent.isNotEmpty) {
-      // Check for internet connectivity
       var connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
-        // Device is offline, handle accordingly
         return;
       }
 
@@ -108,33 +106,77 @@ class _ChatPageState extends State<ChatPage> {
       var messagesCollection =
           _messagesCollection.doc(widget.chatDocumentId).collection('messages');
 
-      // Store the message in Firestore
+      _messageController.clear();
+
+      // ignore: unused_local_variable
       DocumentReference messageRef = await messagesCollection.add({
         'senderId': widget.userId,
         'messageContent': messageContent,
         'timestamp': messageTimestamp,
       });
 
-      setState(() {
-        _messages.insert(
-          0,
-          {
-            'messageId': messageRef.id,
-            'senderId': widget.userId,
-            'messageContent': messageContent,
-            'timestamp': messageTimestamp,
-          },
-        );
-      });
+      setState(() {});
+
       String recipientPushToken = await _getRecipientPushToken();
       if (recipientPushToken.isNotEmpty) {
-        String message = messageContent; // Customize the message as needed
+        String message = messageContent;
         await NotificationManager.sendPushNotification(
             _senderName, recipientPushToken, message);
       }
-
-      _messageController.clear();
     }
+  }
+
+  Future<void> _pickImageOrVideo() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile != null) {
+      File file = File(pickedFile.path);
+      String mediaUrl = await _uploadMedia(file);
+      if (mediaUrl.isNotEmpty) {
+        _sendMessageWithMedia(mediaUrl);
+      }
+    }
+  }
+
+  Future<String> _uploadMedia(File file) async {
+    String filePath =
+        'chat/${widget.chatDocumentId}/${DateTime.now().millisecondsSinceEpoch}';
+    firebase_storage.UploadTask task =
+        firebase_storage.FirebaseStorage.instance.ref(filePath).putFile(file);
+
+    try {
+      firebase_storage.TaskSnapshot snapshot = await task.whenComplete(() {});
+      return await snapshot.ref.getDownloadURL();
+    } catch (e) {
+      print('Error uploading media: $e');
+      return '';
+    }
+  }
+
+  Future<void> _sendMessageWithMedia(String mediaUrl) async {
+    var messageTimestamp = DateTime.now();
+    var messagesCollection =
+        _messagesCollection.doc(widget.chatDocumentId).collection('messages');
+
+    DocumentReference messageRef = await messagesCollection.add({
+      'senderId': widget.userId,
+      'mediaUrl': mediaUrl,
+      'timestamp': messageTimestamp,
+      'messageContent': "",
+    });
+
+    setState(() {
+      _messages.insert(
+        0,
+        {
+          'messageId': messageRef.id,
+          'senderId': widget.userId,
+          'mediaUrl': mediaUrl,
+          'timestamp': messageTimestamp,
+        },
+      );
+    });
   }
 
   @override
@@ -163,8 +205,7 @@ class _ChatPageState extends State<ChatPage> {
                       bottom: 4.0,
                     ),
                     child: Container(
-                      constraints:
-                          BoxConstraints(minWidth: 70), // Set minimum width
+                      constraints: BoxConstraints(minWidth: 70),
                       decoration: BoxDecoration(
                         color: message['senderId'] == widget.userId
                             ? Colors.blue[200]
@@ -175,10 +216,18 @@ class _ChatPageState extends State<ChatPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text(
-                            message['messageContent'] ?? '',
-                            style: TextStyle(fontSize: 16.0),
-                          ),
+                          if (message['messageContent'] != null)
+                            Text(
+                              message['messageContent'],
+                              style: TextStyle(fontSize: 16.0),
+                            ),
+                          if (message['mediaUrl'] != null)
+                            Image.network(
+                              message['mediaUrl'],
+                              width: 200,
+                              height: 200,
+                              fit: BoxFit.cover,
+                            ),
                           SizedBox(height: 4.0),
                           Text(
                             _formatTimestamp(message['timestamp']),
@@ -206,6 +255,8 @@ class _ChatPageState extends State<ChatPage> {
                   ),
                 ),
                 IconButton(
+                    onPressed: _pickImageOrVideo, icon: Icon(Icons.photo)),
+                IconButton(
                   icon: Icon(Icons.send),
                   onPressed: _sendMessage,
                 ),
@@ -219,19 +270,16 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   void dispose() {
-    _messageStreamSubscription.cancel(); // Cancel subscription
+    _messageStreamSubscription.cancel();
     _messageController.dispose();
     super.dispose();
   }
 
   String _formatTimestamp(dynamic timestamp) {
     if (timestamp is Timestamp) {
-      // Convert Firestore Timestamp to DateTime
       DateTime dateTime = timestamp.toDate();
-      // Format the DateTime as desired
       return '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
     } else if (timestamp is DateTime) {
-      // If it's already a DateTime, format it directly
       return '${timestamp.hour.toString().padLeft(2, '0')}:${timestamp.minute.toString().padLeft(2, '0')}';
     } else {
       return '';
