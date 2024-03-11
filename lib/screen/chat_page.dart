@@ -30,7 +30,7 @@ class _ChatPageState extends State<ChatPage> {
 
   String _recipientName = '';
   String _senderName = '';
-  // ignore: unused_field
+// ignore: unused_field
   String _userImage = '';
 
   List<Map<String, dynamic>> _messages = [];
@@ -106,16 +106,21 @@ class _ChatPageState extends State<ChatPage> {
       var messagesCollection =
           _messagesCollection.doc(widget.chatDocumentId).collection('messages');
 
-      _messageController.clear();
+      // Update the state before clearing the controller
+      setState(() {
+        _messageController.clear();
 
-      // ignore: unused_local_variable
-      DocumentReference messageRef = await messagesCollection.add({
-        'senderId': widget.userId,
-        'messageContent': messageContent,
-        'timestamp': messageTimestamp,
+        _messages.insert(
+          0,
+          {
+            'senderId': widget.userId,
+            'messageContent': messageContent,
+            'timestamp': messageTimestamp,
+          },
+        );
       });
 
-      setState(() {});
+      // Clear the message controller
 
       String recipientPushToken = await _getRecipientPushToken();
       if (recipientPushToken.isNotEmpty) {
@@ -159,24 +164,14 @@ class _ChatPageState extends State<ChatPage> {
     var messagesCollection =
         _messagesCollection.doc(widget.chatDocumentId).collection('messages');
 
-    DocumentReference messageRef = await messagesCollection.add({
+    await messagesCollection.add({
       'senderId': widget.userId,
       'mediaUrl': mediaUrl,
       'timestamp': messageTimestamp,
       'messageContent': "",
     });
 
-    setState(() {
-      _messages.insert(
-        0,
-        {
-          'messageId': messageRef.id,
-          'senderId': widget.userId,
-          'mediaUrl': mediaUrl,
-          'timestamp': messageTimestamp,
-        },
-      );
-    });
+    setState(() {});
   }
 
   @override
@@ -204,37 +199,54 @@ class _ChatPageState extends State<ChatPage> {
                       top: 4.0,
                       bottom: 4.0,
                     ),
-                    child: Container(
-                      constraints: BoxConstraints(minWidth: 70),
-                      decoration: BoxDecoration(
-                        color: message['senderId'] == widget.userId
-                            ? Colors.blue[200]
-                            : Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8.0),
-                      ),
-                      padding: EdgeInsets.all(8.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          if (message['messageContent'] != null)
+                    child: GestureDetector(
+                      onTap: () {
+                        if (message['mediaUrl'] != null) {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return Dialog(
+                                child: Image.network(
+                                  message['mediaUrl'],
+                                  fit: BoxFit.contain,
+                                ),
+                              );
+                            },
+                          );
+                        }
+                      },
+                      child: Container(
+                        constraints: BoxConstraints(minWidth: 70),
+                        decoration: BoxDecoration(
+                          color: message['senderId'] == widget.userId
+                              ? Colors.blue[200]
+                              : Colors.grey[300],
+                          borderRadius: BorderRadius.circular(8.0),
+                        ),
+                        padding: EdgeInsets.all(8.0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            if (message['messageContent'] != null)
+                              Text(
+                                message['messageContent'],
+                                style: TextStyle(fontSize: 16.0),
+                              ),
+                            if (message['mediaUrl'] != null)
+                              Image.network(
+                                message['mediaUrl'],
+                                width: 200,
+                                height: 200,
+                                fit: BoxFit.cover,
+                              ),
+                            SizedBox(height: 4.0),
                             Text(
-                              message['messageContent'],
-                              style: TextStyle(fontSize: 16.0),
+                              _formatTimestamp(message['timestamp']),
+                              style:
+                                  TextStyle(fontSize: 12.0, color: Colors.grey),
                             ),
-                          if (message['mediaUrl'] != null)
-                            Image.network(
-                              message['mediaUrl'],
-                              width: 200,
-                              height: 200,
-                              fit: BoxFit.cover,
-                            ),
-                          SizedBox(height: 4.0),
-                          Text(
-                            _formatTimestamp(message['timestamp']),
-                            style:
-                                TextStyle(fontSize: 12.0, color: Colors.grey),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
                   ),
