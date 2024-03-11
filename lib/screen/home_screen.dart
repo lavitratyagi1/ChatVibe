@@ -21,6 +21,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<String, String> _userPhotoURLs = {};
   Map<String, String> _chatDocumentIds = {};
   Map<String, String> _recentMessages = {};
+  Map<String, Timestamp> _recentMessageTimestamps = {}; // New map
   bool _isOnline = true;
   bool _dataLoaded = false;
 
@@ -59,61 +60,67 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-Future<void> _loadUsernamesAndChatDocumentIds() async {
-  _user = _auth.currentUser;
-  if (_user != null) {
-    try {
-      QuerySnapshot chatQuery = await FirebaseFirestore.instance
-          .collection('Messages')
-          .where('senderId', isEqualTo: _user!.uid)
-          .get();
-      chatQuery.docs.forEach((doc) {
-        String recipientId = doc['recipientId'];
-        _chatDocumentIds[recipientId] = doc.id;
-      });
-
-      QuerySnapshot recipientChatQuery = await FirebaseFirestore.instance
-          .collection('Messages')
-          .where('recipientId', isEqualTo: _user!.uid)
-          .get();
-      recipientChatQuery.docs.forEach((doc) {
-        String senderId = doc['senderId'];
-        _chatDocumentIds[senderId] = doc.id;
-      });
-
-      Set<String> userIds = _chatDocumentIds.keys.toSet();
-      userIds.addAll(_chatDocumentIds.values.toSet());
-
-      await Future.forEach(userIds, (userId) async {
-        DocumentSnapshot userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
+  Future<void> _loadUsernamesAndChatDocumentIds() async {
+    _user = _auth.currentUser;
+    if (_user != null) {
+      try {
+        QuerySnapshot chatQuery = await FirebaseFirestore.instance
+            .collection('Messages')
+            .where('senderId', isEqualTo: _user!.uid)
             .get();
-        if (userDoc.exists) {
-          _usernames[userId] = userDoc['displayName'];
-          _userPhotoURLs[userId] = userDoc['photoURL'];
+        chatQuery.docs.forEach((doc) {
+          String recipientId = doc['recipientId'];
+          _chatDocumentIds[recipientId] = doc.id;
+        });
 
-          DocumentSnapshot chatDoc = await FirebaseFirestore.instance
-              .collection('Messages')
-              .doc(_chatDocumentIds[userId])
+        QuerySnapshot recipientChatQuery = await FirebaseFirestore.instance
+            .collection('Messages')
+            .where('recipientId', isEqualTo: _user!.uid)
+            .get();
+        recipientChatQuery.docs.forEach((doc) {
+          String senderId = doc['senderId'];
+          _chatDocumentIds[senderId] = doc.id;
+        });
+
+        Set<String> userIds = _chatDocumentIds.keys.toSet();
+        userIds.addAll(_chatDocumentIds.values.toSet());
+
+        await Future.forEach(userIds, (userId) async {
+          DocumentSnapshot userDoc = await FirebaseFirestore.instance
+              .collection('users')
+              .doc(userId)
               .get();
+          if (userDoc.exists) {
+            _usernames[userId] = userDoc['displayName'];
+            _userPhotoURLs[userId] = userDoc['photoURL'];
 
-          if (chatDoc.exists) {
-            String latestMessage = chatDoc['latestMessage'] ?? 'No recent messages';
-            _recentMessages[userId] = latestMessage;
+            DocumentSnapshot chatDoc = await FirebaseFirestore.instance
+                .collection('Messages')
+                .doc(_chatDocumentIds[userId])
+                .get();
+
+            if (chatDoc.exists) {
+              String latestMessage = chatDoc['latestMessage'] ?? 'No recent messages';
+              _recentMessages[userId] = latestMessage;
+              Timestamp latestMessageTimestamp = chatDoc['latestMessageTimestamp']; // New line
+              _recentMessageTimestamps[userId] = latestMessageTimestamp; // New line
+            }
           }
-        }
-      });
+        });
 
-    } catch (e) {
-      // Handle errors
-      print('Error loading data: $e');
+        // Sort the usernames based on the timestamp of the last message
+        _usernames = Map.fromEntries(_usernames.entries.toList()
+            ..sort((a, b) => _recentMessageTimestamps[b.key]!
+                .compareTo(_recentMessageTimestamps[a.key]!)));
+      } catch (e) {
+        // Handle errors
+        print('Error loading data: $e');
+      }
     }
+    setState(() {
+      _dataLoaded = true;
+    });
   }
-  setState(() {
-    _dataLoaded = true;
-  });
-}
 
   Future<void> _checkConnectivity() async {
     var connectivityResult = await Connectivity().checkConnectivity();

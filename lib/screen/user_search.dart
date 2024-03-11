@@ -161,7 +161,7 @@ class _SearchPageState extends State<UserSearchPage> {
       'recipientId': recipientId,
       'timestamp': DateTime.now(),
       'latestMessage': '',
-      // You can add more fields as needed
+      'latestMessageTimestamp': DateTime.now(),
     });
 
     return newDocumentRef.id;
