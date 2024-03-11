@@ -112,6 +112,12 @@ class _ChatPageState extends State<ChatPage> {
         'timestamp': messageTimestamp,
       });
 
+      var chatDoc = _messagesCollection.doc(widget.chatDocumentId);
+
+      await chatDoc.update({
+        'latestMessage': messageContent,
+      });
+
       // Update the state before clearing the controller
       setState(() {
         _messageController.clear();
@@ -166,6 +172,12 @@ class _ChatPageState extends State<ChatPage> {
       'mediaUrl': mediaUrl,
       'timestamp': messageTimestamp,
       'messageContent': "",
+    });
+
+    var chatDoc = _messagesCollection.doc(widget.chatDocumentId);
+
+    await chatDoc.update({
+      'latestMessage': "Photo",
     });
 
     setState(() {});
