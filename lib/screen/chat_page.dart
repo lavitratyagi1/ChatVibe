@@ -116,6 +116,7 @@ class _ChatPageState extends State<ChatPage> {
 
       await chatDoc.update({
         'latestMessage': messageContent,
+        'latestMessageTimestamp': DateTime.now(),
       });
 
       // Update the state before clearing the controller
@@ -178,6 +179,7 @@ class _ChatPageState extends State<ChatPage> {
 
     await chatDoc.update({
       'latestMessage': "Photo",
+      'latestMessageTimestamp': DateTime.now(),
     });
 
     setState(() {});
