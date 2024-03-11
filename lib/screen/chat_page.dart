@@ -106,18 +106,15 @@ class _ChatPageState extends State<ChatPage> {
       var messagesCollection =
           _messagesCollection.doc(widget.chatDocumentId).collection('messages');
 
+      await messagesCollection.add({
+        'senderId': widget.userId,
+        'messageContent': messageContent,
+        'timestamp': messageTimestamp,
+      });
+
       // Update the state before clearing the controller
       setState(() {
         _messageController.clear();
-
-        _messages.insert(
-          0,
-          {
-            'senderId': widget.userId,
-            'messageContent': messageContent,
-            'timestamp': messageTimestamp,
-          },
-        );
       });
 
       // Clear the message controller
