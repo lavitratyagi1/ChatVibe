@@ -59,66 +59,61 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _loadUsernamesAndChatDocumentIds() async {
-    _user = _auth.currentUser;
-    if (_user != null) {
-      try {
-        QuerySnapshot chatQuery = await FirebaseFirestore.instance
-            .collection('Messages')
-            .where('senderId', isEqualTo: _user!.uid)
+Future<void> _loadUsernamesAndChatDocumentIds() async {
+  _user = _auth.currentUser;
+  if (_user != null) {
+    try {
+      QuerySnapshot chatQuery = await FirebaseFirestore.instance
+          .collection('Messages')
+          .where('senderId', isEqualTo: _user!.uid)
+          .get();
+      chatQuery.docs.forEach((doc) {
+        String recipientId = doc['recipientId'];
+        _chatDocumentIds[recipientId] = doc.id;
+      });
+
+      QuerySnapshot recipientChatQuery = await FirebaseFirestore.instance
+          .collection('Messages')
+          .where('recipientId', isEqualTo: _user!.uid)
+          .get();
+      recipientChatQuery.docs.forEach((doc) {
+        String senderId = doc['senderId'];
+        _chatDocumentIds[senderId] = doc.id;
+      });
+
+      Set<String> userIds = _chatDocumentIds.keys.toSet();
+      userIds.addAll(_chatDocumentIds.values.toSet());
+
+      await Future.forEach(userIds, (userId) async {
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
             .get();
-        chatQuery.docs.forEach((doc) {
-          String recipientId = doc['recipientId'];
-          _chatDocumentIds[recipientId] = doc.id;
-        });
+        if (userDoc.exists) {
+          _usernames[userId] = userDoc['displayName'];
+          _userPhotoURLs[userId] = userDoc['photoURL'];
 
-        QuerySnapshot recipientChatQuery = await FirebaseFirestore.instance
-            .collection('Messages')
-            .where('recipientId', isEqualTo: _user!.uid)
-            .get();
-        recipientChatQuery.docs.forEach((doc) {
-          String senderId = doc['senderId'];
-          _chatDocumentIds[senderId] = doc.id;
-        });
-
-        Set<String> userIds = _chatDocumentIds.keys.toSet();
-        userIds.addAll(_chatDocumentIds.values.toSet());
-
-        await Future.forEach(userIds, (userId) async {
-          DocumentSnapshot userDoc = await FirebaseFirestore.instance
-              .collection('users')
-              .doc(userId)
+          DocumentSnapshot chatDoc = await FirebaseFirestore.instance
+              .collection('Messages')
+              .doc(_chatDocumentIds[userId])
               .get();
-          if (userDoc.exists) {
-            _usernames[userId] = userDoc['displayName'];
-            _userPhotoURLs[userId] = userDoc['photoURL'];
 
-            QuerySnapshot messageQuery = await FirebaseFirestore.instance
-                .collection('Messages')
-                .doc(_chatDocumentIds[userId])
-                .collection('messages')
-                .orderBy('timestamp', descending: true)
-                .limit(1)
-                .get();
-
-            if (messageQuery.docs.isNotEmpty) {
-              String latestMessage = messageQuery.docs.first['messageContent'];
-              _recentMessages[userId] = latestMessage;
-            } else {
-              _recentMessages[userId] = 'No recent messages';
-            }
+          if (chatDoc.exists) {
+            String latestMessage = chatDoc['latestMessage'] ?? 'No recent messages';
+            _recentMessages[userId] = latestMessage;
           }
-        });
+        }
+      });
 
-      } catch (e) {
-        // Handle errors
-        print('Error loading data: $e');
-      }
+    } catch (e) {
+      // Handle errors
+      print('Error loading data: $e');
     }
-    setState(() {
-      _dataLoaded = true;
-    });
   }
+  setState(() {
+    _dataLoaded = true;
+  });
+}
 
   Future<void> _checkConnectivity() async {
     var connectivityResult = await Connectivity().checkConnectivity();
