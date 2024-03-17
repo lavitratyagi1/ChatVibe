@@ -70,7 +70,7 @@ class _ChatPageState extends State<ChatPage> {
         .get();
 
     _senderName = senderDoc['displayName'] ?? '';
-    _userImage = senderDoc['photoURL'] ?? '';
+_userImage = senderDoc['photoURL'] ?? '';
   }
 
   Future<void> _loadPreviousMessages() async {
@@ -110,6 +110,7 @@ class _ChatPageState extends State<ChatPage> {
         'senderId': widget.userId,
         'messageContent': messageContent,
         'timestamp': messageTimestamp,
+        'seenByRecipient': false, // Added field for tracking if seen by recipient
       });
 
       var chatDoc = _messagesCollection.doc(widget.chatDocumentId);
@@ -123,8 +124,6 @@ class _ChatPageState extends State<ChatPage> {
       setState(() {
         _messageController.clear();
       });
-
-      // Clear the message controller
 
       String recipientPushToken = await _getRecipientPushToken();
       if (recipientPushToken.isNotEmpty) {
@@ -173,6 +172,7 @@ class _ChatPageState extends State<ChatPage> {
       'mediaUrl': mediaUrl,
       'timestamp': messageTimestamp,
       'messageContent': "",
+      'seenByRecipient': false, // Added field for tracking if seen by recipient
     });
 
     var chatDoc = _messagesCollection.doc(widget.chatDocumentId);
@@ -199,33 +199,21 @@ class _ChatPageState extends State<ChatPage> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 var message = _messages[index];
-                return Align(
-                  alignment: message['senderId'] == widget.userId
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      left: message['senderId'] == widget.userId ? 64.0 : 16.0,
-                      right: message['senderId'] == widget.userId ? 16.0 : 64.0,
-                      top: 4.0,
-                      bottom: 4.0,
-                    ),
-                    child: GestureDetector(
-                      onTap: () {
-                        if (message['mediaUrl'] != null) {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return Dialog(
-                                child: Image.network(
-                                  message['mediaUrl'],
-                                  fit: BoxFit.contain,
-                                ),
-                              );
-                            },
-                          );
-                        }
-                      },
+                return GestureDetector(
+                  onLongPress: () {
+                    _showMessageOptions(message);
+                  },
+                  child: Align(
+                    alignment: message['senderId'] == widget.userId
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Padding(
+                      padding: EdgeInsets.only(
+                        left: message['senderId'] == widget.userId ? 64.0 : 16.0,
+                        right: message['senderId'] == widget.userId ? 16.0 : 64.0,
+                        top: 4.0,
+                        bottom: 4.0,
+                      ),
                       child: Container(
                         constraints: BoxConstraints(minWidth: 70),
                         decoration: BoxDecoration(
@@ -253,8 +241,7 @@ class _ChatPageState extends State<ChatPage> {
                             SizedBox(height: 4.0),
                             Text(
                               _formatTimestamp(message['timestamp']),
-                              style:
-                                  TextStyle(fontSize: 12.0, color: Colors.grey),
+                              style: TextStyle(fontSize: 12.0, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -331,5 +318,53 @@ class _ChatPageState extends State<ChatPage> {
       print('Error fetching recipient push token: $e');
       return '';
     }
+  }
+
+  Future<void> _markMessageAsSeen(DocumentSnapshot messageDoc) async {
+    var messageId = messageDoc.id;
+    var messageRef = _messagesCollection.doc(widget.chatDocumentId)
+        .collection('messages').doc(messageId);
+
+    await messageRef.update({
+      'seenByRecipient': true,
+    });
+  }
+
+  void _showMessageOptions(Map<String, dynamic> message) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          child: Wrap(
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.edit),
+                title: Text('Edit'),
+                onTap: () {
+                  // Handle edit action
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.delete),
+                title: Text('Delete'),
+                onTap: () {
+                  // Handle delete action
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.info),
+                title: Text('Details'),
+                onTap: () {
+                  // Handle details action
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }
